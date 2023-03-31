@@ -4,8 +4,8 @@ import pandas as pd
 #%% static data
 countries = {'AU':'Australia','CN':'China','HK':'Hong Kong','ID':'Indonesia',
              'IN':'India','JP':'Japan','KR':'South Korea','MY':'Malaysia',
-             'PH':'Philippines','LK':'Sri Lanka','SG':'Singapore','TH':'Thailand',
-             'TW':'Taiwan','VN':'Vietnam'}
+             'NZ':'New Zealand','PH':'Philippines','LK':'Sri Lanka','SG':'Singapore',
+             'TH':'Thailand','TW':'Taiwan','VN':'Vietnam'}
 
 fields = {'countryCode':'Country Code','date':'Date',
           'localName':'Local Name','name':'Name','types':'Types'}
