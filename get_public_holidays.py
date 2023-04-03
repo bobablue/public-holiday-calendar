@@ -37,4 +37,4 @@ hols_df['Date'] = pd.to_datetime(hols_df['Date']).dt.date
 hols_df['Full Info'] = '[' + hols_df['Country'] + '] ' + hols_df['Name']
 
 #%% export
-hols_df.to_csv('Public Holidays.csv', encoding='utf-8', index=False)
+hols_df.to_csv('Public Holidays.csv', encoding='utf-16', index=False)
