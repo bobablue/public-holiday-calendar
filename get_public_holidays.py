@@ -8,9 +8,6 @@ countries = {'AU':'Australia','CN':'China','DE':'Germany','HK':'Hong Kong',
              'SG':'Singapore','TH':'Thailand','TW':'Taiwan','GB':'United Kingdom',
              'VN':'Vietnam'}
 
-fields = {'countryCode':'Country Code','date':'Date',
-          'localName':'Local Name','name':'Name','types':'Types'}
-
 #%% url and params (https://date.nager.at/)
 url_base = 'https://date.nager.at/api/v3/PublicHolidays/2023/country'
 
@@ -28,13 +25,12 @@ hols_df = pd.DataFrame()
 for cty in hols.keys():
     hols_df = pd.concat([hols_df, pd.DataFrame(hols[cty])])
 
-# keep only selected columns, tidy up format
-hols_df = hols_df[list(fields.keys())].rename(columns=fields)
-hols_df['Country'] = hols_df['Country Code'].map(countries)
-hols_df['Date'] = pd.to_datetime(hols_df['Date']).dt.date
+#%% tidy up, keep only tidied columns (date, subject, description)
+hols_df['Date'] = pd.to_datetime(hols_df['date']).dt.date
+hols_df['Subject'] = '[' + hols_df['countryCode'].map(countries) + '] ' + hols_df['name']
+hols_df = hols_df.rename(columns={'localName':'Description'})
 
-# single col combining country and holiday name
-hols_df['Full Info'] = '[' + hols_df['Country'] + '] ' + hols_df['Name']
+hols_df = hols_df[['Date','Subject','Description']]
 
 #%% export
 hols_df.to_csv('Public Holidays.csv', encoding='utf-16', index=False)
