@@ -2,10 +2,11 @@ import requests
 import pandas as pd
 
 #%% static data
-countries = {'AU':'Australia','CN':'China','HK':'Hong Kong','ID':'Indonesia',
-             'IN':'India','JP':'Japan','KR':'South Korea','MY':'Malaysia',
-             'NZ':'New Zealand','PH':'Philippines','LK':'Sri Lanka','SG':'Singapore',
-             'TH':'Thailand','TW':'Taiwan','VN':'Vietnam'}
+countries = {'AU':'Australia','CN':'China','DE':'Germany','HK':'Hong Kong',
+             'ID':'Indonesia','IN':'India','JP':'Japan','KR':'South Korea',
+             'MY':'Malaysia','NZ':'New Zealand','PH':'Philippines','LK':'Sri Lanka',
+             'SG':'Singapore','TH':'Thailand','TW':'Taiwan','GB':'United Kingdom',
+             'VN':'Vietnam'}
 
 fields = {'countryCode':'Country Code','date':'Date',
           'localName':'Local Name','name':'Name','types':'Types'}
