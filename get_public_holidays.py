@@ -42,4 +42,4 @@ hols_df = hols_df[['Date','Subject','Description']]
 hols_df = hols_df.drop_duplicates().reset_index(drop=True)
 
 #%% export
-hols_df.to_csv(f"Public Holidays_{meta['year']}.csv", encoding='utf-16', index=False)
+hols_df.to_csv(f"Public Holidays_{meta['year']}.csv", encoding='utf-8', index=False)
