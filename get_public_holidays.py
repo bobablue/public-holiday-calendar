@@ -1,45 +1,60 @@
-"""fetch public holiodays of selected countries from API and save as flat file."""
+"""fetch public holiodays of selected countries from Google API and save as flat file."""
+import os
 import requests
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
 
-#%% static data (https://date.nager.at/)
-meta = {'url':'https://date.nager.at/api/v3/PublicHolidays/{year}/{country}',
-        'year':'2024',
-        'data_keep':['date','name','localName','countryCode'],
-        'countries':{'AU':'Australia', 'CN':'China', 'DE':'Germany', 'HK':'Hong Kong',
-                     'ID':'Indonesia', 'IN':'India', 'JP':'Japan', 'KR':'South Korea',
-                     'MY':'Malaysia', 'NZ':'New Zealand', 'PH':'Philippines', 'LK':'Sri Lanka',
-                     'SG':'Singapore', 'TH':'Thailand', 'TW':'Taiwan', 'GB':'United Kingdom',
-                     'VN':'Vietnam'}}
+#%% static data
+meta = {'url':'https://www.googleapis.com/calendar/v3/calendars/en.{cty}%23holiday%40group.v.calendar.google.com/events?',
 
-meta['url'] = meta['url'].replace('{year}', meta['year'])
+        'url_params':{'key':open('config/google_api_key.txt', 'r').read()},
+
+        'countries':{'australian':'Australia', 'china': 'China', 'german':'Germany', 'hong_kong':'Hong Kong',
+                     'indonesian':'Indonesia', 'indian':'India', 'japanese':'Japan',
+                     'malaysia':'Malaysia', 'new_zealand':'New Zealand', 'philippines':'Philippines',
+                     'south_korea':'South Korea', 'lk':'Sri Lanka', 'singapore':'Singapore',
+                     'th':'Thailand', 'taiwan':'Taiwan',
+                     'uk':'United Kingdom', 'vietnamese':'Vietnam'}}
+
+#%% functions
+#%%
+def get_data(country):
+    response = requests.get(url=meta['url'].replace('{cty}',country), params=meta['url_params']).json()
+    if 'error' in response:
+        print(f"Error in country code: {country}")
+        return(None)
+    else:
+        print(f"[{meta['countries'][country]}] done")
+    return(response)
+
+#%%
+def pool_getdata(list_countries):
+    data = {}
+    with ThreadPoolExecutor(max_workers=min(os.cpu_count()*10, len(list_countries))) as executor:
+        for i,j in list_countries.items():
+            data[j] = executor.submit(get_data, i)
+    data = {k:v.result() for k,v in data.items()}
+    return(data)
+
+#%%
+def extract_data(json_obj):
+    data = []
+    for cty in json_obj:
+        for hol in json_obj[cty]['items']:
+            if hol['description']=='Public holiday':
+                data.append([cty, hol['summary'],
+                             [x.date() for x in pd.date_range(start=hol['start']['date'],
+                                                              end=hol['end']['date'],
+                                                              inclusive='left')]])
+
+    data = pd.DataFrame(data, columns=['Country','Public Holiday','Date']).explode(['Date'])
+    data['Calendar Title'] = '[' + data['Country'] + '] ' + data['Public Holiday']
+    return(data)
 
 #%% get data
-hols = {}
-for code, cty in meta['countries'].items():
-    response = requests.get(url=meta['url'].replace('{country}',code))
-    if response.content:
-        hols[cty] = response.json()
-
-        # keep only selected json data
-        for i in enumerate(hols[cty]):
-            hols[cty][i[0]] = {k:v for k,v in hols[cty][i[0]].items() if k in meta['data_keep']}
-
-    else:
-        print(f"[Not available] {cty}")
-
-#%% pass json data to dataframe
-hols_df = pd.DataFrame()
-for cty in list(hols):
-    hols_df = pd.concat([hols_df, pd.DataFrame(hols[cty])])
-
-#%% tidy up, keep only tidied columns (date, subject, description)
-hols_df['Date'] = pd.to_datetime(hols_df['date']).dt.date
-hols_df['Subject'] = '[' + hols_df['countryCode'].map(meta['countries']) + '] ' + hols_df['name']
-hols_df = hols_df.rename(columns={'localName':'Description'})
-
-hols_df = hols_df[['Date','Subject','Description']]
-hols_df = hols_df.drop_duplicates().reset_index(drop=True)
+data = {}
+data['raw'] = pool_getdata(meta['countries'])
+data['clean'] = extract_data(data['raw'])
 
 #%% export
-hols_df.to_csv(f"Public Holidays_{meta['year']}.csv", encoding='utf-8', index=False)
+data['clean'].to_csv('Public Holidays.csv', encoding='utf-8', index=False)
