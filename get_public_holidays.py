@@ -7,7 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 #%% static data
 meta = {'url':'https://www.googleapis.com/calendar/v3/calendars/en.{cty}%23holiday%40group.v.calendar.google.com/events?',
 
-        'url_params':{'key':open('config/google_api_key.txt', 'r').read()},
+        'url_params':{'key':open('config/google_api_key.txt', 'r').read(),
+                      'maxResults':'9999'}, # https://stackoverflow.com/a/55413860 bug
 
         'countries':{'australian':'Australia', 'china': 'China', 'german':'Germany', 'hong_kong':'Hong Kong',
                      'indonesian':'Indonesia', 'indian':'India', 'japanese':'Japan',
@@ -37,7 +38,7 @@ def pool_getdata(list_countries):
     return(data)
 
 #%%
-def extract_data(json_obj):
+def extract_data(json_obj, date_from):
     data = []
     for cty in json_obj:
         for hol in json_obj[cty]['items']:
@@ -49,12 +50,16 @@ def extract_data(json_obj):
 
     data = pd.DataFrame(data, columns=['Country','Public Holiday','Date']).explode(['Date'])
     data['Calendar Title'] = '[' + data['Country'] + '] ' + data['Public Holiday']
+
+    # keep only results from defined date, sort by country and date
+    data = data.loc[data['Date']>=pd.to_datetime(date_from).date()]
+    data = data.sort_values(by=['Country','Date'])
     return(data)
 
-#%% get data
+#%% get data. only want dates from current calendar year.
 data = {}
 data['raw'] = pool_getdata(meta['countries'])
-data['clean'] = extract_data(data['raw'])
+data['clean'] = extract_data(data['raw'], pd.to_datetime('today').date() + pd.tseries.offsets.YearBegin(-1))
 
 #%% export
 data['clean'].to_csv('Public Holidays.csv', encoding='utf-8', index=False)
